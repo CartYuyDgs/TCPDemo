@@ -1,5 +1,6 @@
 
 import socket
+import threading
 
 class TcpServer():
 
@@ -18,22 +19,27 @@ class TcpServer():
         while not self.is_down:
             request, client_address = self.get_request()
             try:
-                self.process_request(request, client_address)
+                # self.process_request(request, client_address)
+                self.process_request_muti(request, client_address)
             except Exception as e:
                 print("err: "+ str(e))
             finally:
-                self.close_request(request)
+                # self.close_request(request)
+                print(0)
 
     # 获取请求
     def get_request(self):
         return self.Socket.accept()
 
-
     # 处理请求
     def process_request(self, request, client_address):
         handler = self.HandlerClass(self, request,client_address)
         handler.handler()
-        pass
+        self.close_request(request)
+
+    def process_request_muti(self, request, client_address):
+        t = threading.Thread(target=self.process_request,args=(request, client_address))
+        t.start()
 
     # 关闭请求
     def close_request(self, request):
