@@ -31,13 +31,13 @@ class TcpServer():
 
     # 处理请求
     def process_request(self, request, client_address):
-        handler = self.HandlerClass(request,client_address)
+        handler = self.HandlerClass(self, request,client_address)
         handler.handler()
         pass
 
     # 关闭请求
     def close_request(self, request):
-        request.shutdown()
+        request.shutdown(socket.SHUT_WR)
         request.close()
 
     # 关闭server
