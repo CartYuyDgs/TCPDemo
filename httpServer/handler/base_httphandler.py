@@ -10,6 +10,7 @@ class BaseHttpRequestHandler(streamRequestHandler):
         self.version = None
         self.headers = None
         self.body = None
+        self.request_line = None
         streamRequestHandler.__init__(self, server, request, client_address)
 
     def handler(self):
@@ -51,6 +52,9 @@ class BaseHttpRequestHandler(streamRequestHandler):
 
     def parse_request(self):
         first_line = self.rfile.readline()
+        self.request_line = first_line
+        if not self.request_line:
+            return
         words = first_line.split()
 
         self.method, self.path, self.version = words
@@ -171,7 +175,7 @@ class BaseHttpRequestHandler(streamRequestHandler):
             'message':s_msg,
             'explain': l_msg
         }
-        print(response_content)
+        # print(response_content)
         self.write_response(code,s_msg)
         self.end_header()
         self.write_content(response_content)
