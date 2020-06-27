@@ -1,5 +1,6 @@
-
+# -*- encoding=utf-8 -*-
 from httpServer.handler.base_handler import streamRequestHandler
+from httpServer.util import date_time_string
 
 class BaseHttpRequestHandler(streamRequestHandler):
 
@@ -9,14 +10,16 @@ class BaseHttpRequestHandler(streamRequestHandler):
         self.version = None
         self.headers = None
         self.body = None
-        streamRequestHandler.__init__(server, request, client_address)
+        streamRequestHandler.__init__(self, server, request, client_address)
 
-    def handle(self):
+    def handler(self):
         try:
             if not self.parse_request():
                 return
-            method_name = 'do_' + self.method
+            method_name = 'do_' + self.method.decode()
             if not hasattr(self, method_name):
+                self.write_error(404, None)
+                self.send()
                 return
 
             method = getattr(self, method_name)
@@ -25,6 +28,13 @@ class BaseHttpRequestHandler(streamRequestHandler):
         except Exception as e:
             print(e)
 
+    def do_GET(self):
+        msg = '<h1>Hello world!</h1>'
+        self.write_response(200, "Success")
+        self.write_header('Content-Length', len(msg))
+        self.end_header()
+        self.write_content(msg)
+
     def parse_headers(self):
         headers = {}
 
@@ -32,12 +42,11 @@ class BaseHttpRequestHandler(streamRequestHandler):
             line = self.readline()
             if line:
                 key, value = line.split(":", 1)
-                key = key.split()
-                value = value.split()
+                key = key.strip()
+                value = value.strip()
                 headers[key] = value
             else:
                 break
-
         return headers
 
     def parse_request(self):
@@ -45,9 +54,7 @@ class BaseHttpRequestHandler(streamRequestHandler):
         words = first_line.split()
 
         self.method, self.path, self.version = words
-
         self.headers = self.parse_headers()
-
         key = 'Content-Length'
         if key in self.headers.keys() :
             body_length = int(self.headers[key])
@@ -57,17 +64,19 @@ class BaseHttpRequestHandler(streamRequestHandler):
 
 
     def write_header(self, key, value):
-        msg = "%s: %s"%(key, value)
+        msg = "%s: %s\r\n"%(key, value)
         self.write_content(msg)
         pass
 
     default_http_version = 'HTTP/1.1'
-    def write_response(self, code, msg):
-        response_line = '%s %d %s'%(self.default_http_version, code, msg)
+    def write_response(self, code, msg=None):
+        if msg == None:
+            msg = self.responses[code]
+        response_line = '%s %d %s\r\n'%(self.default_http_version, code, msg)
         self.write_content(response_line)
 
-        self.write_header('Server', '')
-        self.write_header('Data', '')
+        self.write_header('Server', '%s: %s'%(self.server.server_name, self.server.version))
+        self.write_header('Data', date_time_string())
 
         pass
 
@@ -148,16 +157,21 @@ class BaseHttpRequestHandler(streamRequestHandler):
         505: ('HTTP Version Not Supported', 'Cannot fulfill request.'),
     }
 
-    def write_error(self, code, msg):
+    def write_error(self, code, msg = None):
+
+        if msg == None :
+            msg = self.responses[code]
+
         s_msg, l_msg = self.responses[code]
         if msg :
             s_msg = msg
+
         response_content = self.DEFAULT_ERROR_MESSAGE_TEMPLATE %{
             'code':code,
             'message':s_msg,
             'explain': l_msg
         }
-
+        print(response_content)
         self.write_response(code,s_msg)
         self.end_header()
         self.write_content(response_content)

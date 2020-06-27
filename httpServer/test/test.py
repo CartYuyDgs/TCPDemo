@@ -1,6 +1,8 @@
 
 from httpServer.socker_server.socket_server import TcpServer
+from httpServer.socker_server.base_http_server import BaseHttpServer
 from httpServer.handler.base_handler import streamRequestHandler
+from httpServer.handler.base_httphandler import BaseHttpRequestHandler
 import threading
 import socket
 
@@ -50,6 +52,16 @@ class TestBaseResuestHandler(streamRequestHandler):
         self.send()
         pass
 
+class BaseHttpRequestHandlerTest:
+
+    def run_serv(self):
+        BaseHttpServer(("127.0.0.1",9999),BaseHttpRequestHandler).server_forever()
+
+    def run(self):
+        self.run_serv()
+
+
 
 if __name__ == '__main__':
-    SocketServerTest().run()
+    # SocketServerTest().run()
+    BaseHttpRequestHandlerTest().run()
